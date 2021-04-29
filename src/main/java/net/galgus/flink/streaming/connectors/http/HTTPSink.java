@@ -28,6 +28,7 @@ public class HTTPSink<IN> extends RichSinkFunction<IN> {
     public void invoke(IN value, Context context) throws Exception {
         if (value != null) {
             URL url = new URL(httpConnectionConfig.getEndpoint());
+            HttpsURLConnection conn = httpConnectionConfig.isHttpsEnabled() ? (HttpsURLConnection) url.openConnection() : (HttpsURLConnection) url.openConnection();
 
             long start = System.nanoTime();
             TrustManager[] trustAllCerts = new TrustManager[] {
@@ -45,16 +46,15 @@ public class HTTPSink<IN> extends RichSinkFunction<IN> {
             SSLContext sc = SSLContext.getInstance("SSL");
             sc.init(null, trustAllCerts, new java.security.SecureRandom());
 
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            conn.setDefaultSSLSocketFactory(sc.getSocketFactory());
 
-            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+            conn.setDefaultHostnameVerifier(new HostnameVerifier() {
                 @Override
                 public boolean verify(String s, SSLSession sslSession) {
                     return true;
                 }
             });
 
-            HttpURLConnection conn = httpConnectionConfig.isHttpsEnabled() ? (HttpsURLConnection) url.openConnection() : (HttpURLConnection) url.openConnection();
             conn.setDoOutput(true);
             conn.setRequestMethod(httpConnectionConfig.getMethod());
             
