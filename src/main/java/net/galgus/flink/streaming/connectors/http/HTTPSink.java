@@ -1,19 +1,22 @@
 package net.galgus.flink.streaming.connectors.http;
 
 import net.galgus.flink.streaming.connectors.http.common.HTTPConnectionConfig;
+import net.galgus.flink.streaming.connectors.http.common.TrustCerts;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.*;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLSession;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
-import java.security.cert.X509Certificate;
 
 
 public class HTTPSink<IN> extends RichSinkFunction<IN> {
@@ -31,17 +34,8 @@ public class HTTPSink<IN> extends RichSinkFunction<IN> {
             HttpsURLConnection conn = httpConnectionConfig.isHttpsEnabled() ? (HttpsURLConnection) url.openConnection() : (HttpsURLConnection) url.openConnection();
 
             long start = System.nanoTime();
-            TrustManager[] trustAllCerts = new TrustManager[] {
-                    new X509TrustManager() {
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                            return null;
-                        }
-
-                        public void checkClientTrusted(X509Certificate[] certs, String authType) {  }
-
-                        public void checkServerTrusted(X509Certificate[] certs, String authType) {  }
-                    }
-            };
+            TrustCerts trustCerts = new TrustCerts();
+            TrustManager[] trustAllCerts = trustCerts.build();
 
             SSLContext sc = SSLContext.getInstance("SSL");
             sc.init(null, trustAllCerts, new java.security.SecureRandom());
